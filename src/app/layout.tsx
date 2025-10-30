@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SDUI Playground",
+  title: "SDUI",
   description: "Server-Driven UI Template Playground",
 };
 
