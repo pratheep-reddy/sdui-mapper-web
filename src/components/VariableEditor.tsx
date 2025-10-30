@@ -63,6 +63,9 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
     });
     return names;
   });
+  const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>([
+    { key: '', value: '' }
+  ]);
 
   useEffect(() => {
     const fetchDynamicSettings = async () => {
@@ -76,6 +79,17 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
             setApiEndpoint(result.data.endpoint || 'https://api.example.com/data');
             setApiMethod(result.data.httpMethod || 'GET');
             setRequestJson(JSON.stringify(result.data.requestJson || { key: 'value' }, null, 2));
+            
+            // Load headers if they exist
+            if (result.data.headerJson && typeof result.data.headerJson === 'object') {
+              const loadedHeaders = Object.entries(result.data.headerJson).map(([key, value]) => ({
+                key,
+                value: String(value)
+              }));
+              if (loadedHeaders.length > 0) {
+                setHeaders(loadedHeaders);
+              }
+            }
           }
           // Mark as loaded regardless of whether data exists
           setDynamicSettingsLoaded(true);
@@ -324,6 +338,22 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
     }
   };
 
+  const addHeader = () => {
+    setHeaders([...headers, { key: '', value: '' }]);
+  };
+
+  const removeHeader = (index: number) => {
+    if (headers.length > 1) {
+      setHeaders(headers.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateHeader = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedHeaders = [...headers];
+    updatedHeaders[index][field] = value;
+    setHeaders(updatedHeaders);
+  };
+
   const handleSaveApiSettings = async () => {
     setIsUpdating(true);
     setUpdateMessage(null);
@@ -341,6 +371,14 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
         throw new Error('Invalid request JSON format');
       }
 
+      // Convert headers array to JSON object
+      const headerJson: Record<string, string> = {};
+      headers.forEach(header => {
+        if (header.key.trim() !== '') {
+          headerJson[header.key] = header.value;
+        }
+      });
+
       // First, update template type to dynamic
       const updateTypeResponse = await fetch(API_ENDPOINTS.templates.update(templateId), {
         method: 'PUT',
@@ -356,7 +394,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
         throw new Error('Failed to update template type');
       }
 
-      // Then save API settings
+      // Then save API settings with headers
       const response = await fetch(API_ENDPOINTS.templates.dynamicSettings.create(templateId), {
         method: 'POST',
         headers: {
@@ -366,6 +404,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
           endpoint: apiEndpoint,
           httpMethod: apiMethod,
           requestJson: parsedRequestJson,
+          headerJson: headerJson,
         }),
       });
 
@@ -1085,6 +1124,55 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
                     </div>
                   </div>
                 )}
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-slate-600">
+                      Headers
+                    </label>
+                    <button
+                      onClick={addHeader}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white rounded-md transition-colors"
+                      style={{ backgroundColor: '#e75e27' }}
+                      title="Add Header"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {headers.map((header, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={header.key}
+                          onChange={(e) => updateHeader(index, 'key', e.target.value)}
+                          placeholder="Key (e.g., Authorization)"
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900 bg-white"
+                        />
+                        <input
+                          type="text"
+                          value={header.value}
+                          onChange={(e) => updateHeader(index, 'value', e.target.value)}
+                          placeholder="Value (e.g., Bearer token)"
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900 bg-white"
+                        />
+                        <button
+                          onClick={() => removeHeader(index)}
+                          disabled={headers.length === 1}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          title="Delete Header"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <button
