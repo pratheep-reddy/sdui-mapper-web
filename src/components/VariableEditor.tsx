@@ -1141,17 +1141,29 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
                               <label className="text-xs font-medium text-slate-600">Variable Name:</label>
                               <input
                                 type="text"
-                                value={variableNames[index] || variable.name}
+                                value={variableNames[index] !== undefined ? variableNames[index] : variable.name}
                                 onChange={(e) => {
                                   const newName = e.target.value;
+                                  
+                                  // If cleared completely, remove from state to allow fallback
+                                  if (newName === '') {
+                                    setVariableNames(prev => {
+                                      const updated = { ...prev };
+                                      delete updated[index];
+                                      return updated;
+                                    });
+                                    return;
+                                  }
+                                  
                                   // Update variable name in state
                                   setVariableNames(prev => ({ ...prev, [index]: newName }));
                                   
                                   // Update field mappings with new variable name
                                   const oldFields = Object.keys(firstItem);
                                   const updatedMappings = { ...fieldMappings };
+                                  const oldVarName = variableNames[index] !== undefined ? variableNames[index] : variable.name;
                                   oldFields.forEach((fieldName) => {
-                                    const oldKey = `${variable.name}.${fieldName}`;
+                                    const oldKey = `${oldVarName}.${fieldName}`;
                                     const newKey = `${newName}.${fieldName}`;
                                     if (updatedMappings[oldKey]) {
                                       updatedMappings[newKey] = updatedMappings[oldKey];
