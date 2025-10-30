@@ -142,7 +142,7 @@ export default function TemplateDetailPage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={fetchPreviewData}
+              onClick={() => fetchPreviewData()}
               disabled={previewLoading}
               className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ 

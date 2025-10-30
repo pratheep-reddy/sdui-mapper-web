@@ -2,6 +2,9 @@ import Link from 'next/link';
 import TemplateGrid from '@/components/TemplateGrid';
 import { API_ENDPOINTS } from '@/lib/constants';
 
+// Force dynamic rendering since we need to fetch templates at runtime
+export const dynamic = 'force-dynamic';
+
 interface Template {
   templateId: string;
   templateName: string;
