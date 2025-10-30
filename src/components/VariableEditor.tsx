@@ -103,10 +103,11 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
     fetchDynamicSettings();
   }, [mode, dynamicSettingsLoaded, templateData]);
 
-  // Load field mappings from dynamic template JSON (don't auto-generate)
+  // Load field mappings and arrayKeyName from dynamic template JSON (don't auto-generate)
   useEffect(() => {
     if (mode === 'dynamic' && variables.length > 0) {
       const loadedMappings: Record<string, string> = {};
+      const loadedNames: Record<number, string> = {};
       
       // Get the dynamic template JSON or fall back to static template JSON
       const sourceJson = templateData.dynamicTemplateJson || templateData.staticTemplateJson;
@@ -127,11 +128,19 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
             const templateVariable = variablesArray[index];
             if (!templateVariable) return;
 
+            // Load arrayKeyName if it exists
+            if (templateVariable.arrayKeyName) {
+              loadedNames[index] = templateVariable.arrayKeyName;
+            }
+
+            // Use arrayKeyName if available, otherwise use variable.name
+            const varName = templateVariable.arrayKeyName || variable.name;
+
             if (variable.type === 'array' && Array.isArray(templateVariable.value) && templateVariable.value.length > 0) {
               // For array variables, extract field mappings from template
               const firstItem = templateVariable.value[0];
               Object.keys(firstItem).forEach((fieldName) => {
-                const fieldKey = `${variable.name}.${fieldName}`;
+                const fieldKey = `${varName}.${fieldName}`;
                 const templateValue = firstItem[fieldName];
                 // Only set if the value looks like a mapping (contains {{...}})
                 if (typeof templateValue === 'string' && templateValue.includes('{{')) {
@@ -157,6 +166,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       }
 
       setFieldMappings(loadedMappings);
+      setVariableNames(loadedNames);
     }
   }, [mode, variables, templateData]);
 
@@ -473,8 +483,9 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
         throw new Error('Template ID not found');
       }
 
-      // Update the template JSON with new variable names and field mappings
-      const updatedTemplateJson = JSON.parse(JSON.stringify(templateData.staticTemplateJson));
+      // In dynamic mode, update dynamicTemplateJson (or create from staticTemplateJson if it doesn't exist)
+      const sourceJson = templateData.dynamicTemplateJson || templateData.staticTemplateJson;
+      const updatedTemplateJson = JSON.parse(JSON.stringify(sourceJson));
       
       // Find the variables array location (card.variables, variables, or template.variables)
       let variablesArray: any[] | null = null;
@@ -492,13 +503,15 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       }
 
       if (variablesArray) {
-        // Update variable names and apply field mappings
+        // Update arrayKeyName and apply field mappings (don't modify variable.name)
         variables.forEach((variable, index) => {
           const newName = variableNames[index] || variable.name;
           
           if (variablesArray[index]) {
-            // Update variable name
-            variablesArray[index].name = newName;
+            // For array variables, set arrayKeyName instead of changing name
+            if (variable.type === 'array') {
+              variablesArray[index].arrayKeyName = newName;
+            }
             
             // For array variables, update field mappings in the template
             if (variable.type === 'array' && Array.isArray(variable.value) && variable.value.length > 0) {
@@ -525,14 +538,14 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
           }
         });
         
-        // Save updated template to backend
+        // Save updated template to backend as dynamicTemplateJson
         const response = await fetch(API_ENDPOINTS.templates.update(templateId), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            staticTemplateJson: updatedTemplateJson,
+            dynamicTemplateJson: updatedTemplateJson,
           }),
         });
 
