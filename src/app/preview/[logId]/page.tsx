@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DivKitRenderer from '@/components/DivKitRenderer';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 type DeviceType = 'mobile' | 'tablet' | 'web';
 
@@ -22,7 +23,7 @@ export default function PreviewPage() {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`http://localhost:3001/sdui/component/${templateId}`);
+        const response = await fetch(API_ENDPOINTS.sdui.component(templateId));
         debugger;
         if (!response.ok) {
           throw new Error('Failed to fetch template');

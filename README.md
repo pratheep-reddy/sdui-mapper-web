@@ -23,6 +23,41 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) - you'll be automatically redirected to the `/mapper` page.
 
+### Environment Variables
+
+The app uses the following environment variables:
+
+- `NEXT_PUBLIC_API_URL` - The base URL for the SDUI server API (default: `https://sdui-server.onrender.com`)
+
+For local development with a local server, create a `.env.local` file:
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+### Deploying to Vercel
+
+1. Install Vercel CLI (optional):
+```bash
+npm i -g vercel
+```
+
+2. Deploy using Vercel CLI:
+```bash
+cd sdui-map-web
+vercel
+```
+
+Or connect your GitHub repository to Vercel:
+1. Go to [vercel.com](https://vercel.com)
+2. Import your repository
+3. Vercel will auto-detect Next.js settings
+4. Deploy!
+
+**Environment Variables for Vercel:**
+- If using a different API server, set `NEXT_PUBLIC_API_URL` in Vercel project settings
+
 ### Project Structure
 
 ```

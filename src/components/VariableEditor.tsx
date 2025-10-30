@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -67,7 +68,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
     const fetchDynamicSettings = async () => {
       if (mode === 'dynamic' && !dynamicSettingsLoaded && templateData?.templateId) {
         try {
-          const response = await fetch(`http://localhost:3001/templates/${templateData.templateId}/dynamic-settings`);
+          const response = await fetch(API_ENDPOINTS.templates.dynamicSettings.list(templateData.templateId));
           const result = await response.json();
           
           if (result.success && result.data) {
@@ -287,7 +288,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
         };
       }
 
-      const response = await fetch(`http://localhost:3001/templates/${templateId}`, {
+      const response = await fetch(API_ENDPOINTS.templates.update(templateId), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -341,7 +342,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       }
 
       // First, update template type to dynamic
-      const updateTypeResponse = await fetch(`http://localhost:3001/templates/${templateId}`, {
+      const updateTypeResponse = await fetch(API_ENDPOINTS.templates.update(templateId), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -356,7 +357,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       }
 
       // Then save API settings
-      const response = await fetch(`http://localhost:3001/templates/${templateId}/dynamic-settings`, {
+      const response = await fetch(API_ENDPOINTS.templates.dynamicSettings.create(templateId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -459,7 +460,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
         });
         
         // Save updated template to backend
-        const response = await fetch(`http://localhost:3001/templates/${templateId}`, {
+        const response = await fetch(API_ENDPOINTS.templates.update(templateId), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

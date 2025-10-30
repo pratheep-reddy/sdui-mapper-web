@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import TemplateGrid from '@/components/TemplateGrid';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 interface Template {
   templateId: string;
@@ -11,7 +12,7 @@ interface Template {
 
 async function getTemplates(): Promise<Template[]> {
   try {
-    const response = await fetch('http://localhost:3001/templates', {
+    const response = await fetch(API_ENDPOINTS.templates.list(), {
       cache: 'no-store',
     });
     

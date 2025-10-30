@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -68,7 +69,7 @@ export default function NewTemplatePage() {
       }
 
       // Call the API
-      const response = await fetch('http://localhost:3001/templates', {
+      const response = await fetch(API_ENDPOINTS.templates.create(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

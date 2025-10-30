@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import DivKitRenderer from '@/components/DivKitRenderer';
 import VariableEditor from '@/components/VariableEditor';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 interface Template {
   templateId: string;
@@ -32,7 +33,7 @@ export default function TemplateDetailPage() {
   const fetchTemplateData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/templates/${templateId}`);
+      const response = await fetch(API_ENDPOINTS.templates.getById(templateId));
       
       if (!response.ok) {
         throw new Error('Failed to fetch template');
@@ -66,9 +67,9 @@ export default function TemplateDetailPage() {
       console.log('=== Fetching preview data ===');
       console.log('Route param (templateId):', templateId);
       console.log('Actual templateId from DB:', idToUse);
-      console.log('URL:', `http://localhost:3001/sdui/component/${idToUse}`);
+      console.log('URL:', API_ENDPOINTS.sdui.component(idToUse));
       
-      const response = await fetch(`http://localhost:3001/sdui/component/${idToUse}`);
+      const response = await fetch(API_ENDPOINTS.sdui.component(idToUse));
       console.log('Response status:', response.status);
       console.log('Response ok?:', response.ok);
       

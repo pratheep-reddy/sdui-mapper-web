@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import '@divkitframework/divkit/dist/client.css';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 interface TemplateCardProps {
   templateId: string;
@@ -22,7 +23,7 @@ export default function TemplateCard({ templateId, templateName, staticTemplateJ
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://localhost:3001/templates/${templateId}`, {
+      const response = await fetch(API_ENDPOINTS.templates.delete(templateId), {
         method: 'DELETE',
       });
 
