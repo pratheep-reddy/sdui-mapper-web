@@ -856,6 +856,40 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
           </div>
         );
       
+      case 'dict':
+      case 'object':
+        return (
+          <div className="space-y-2">
+            <div className="border border-slate-300 rounded-lg overflow-hidden">
+              <MonacoEditor
+                height="200px"
+                language="json"
+                theme="vs-light"
+                value={typeof currentValue === 'object' ? JSON.stringify(currentValue, null, 2) : currentValue}
+                onChange={(value) => {
+                  try {
+                    const parsed = JSON.parse(value || '{}');
+                    handleVariableChange(variable.name, parsed);
+                  } catch (e) {
+                    // Keep the text as-is if it's not valid JSON yet
+                  }
+                }}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 12,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  formatOnPaste: true,
+                  formatOnType: true,
+                }}
+              />
+            </div>
+            <p className="text-xs text-slate-500">Edit the JSON object</p>
+          </div>
+        );
+      
       default:
         return (
           <input
