@@ -103,35 +103,62 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
     fetchDynamicSettings();
   }, [mode, dynamicSettingsLoaded, templateData]);
 
-  // Initialize default field mappings when switching to dynamic mode
+  // Load field mappings from dynamic template JSON (don't auto-generate)
   useEffect(() => {
     if (mode === 'dynamic' && variables.length > 0) {
-      const defaultMappings: Record<string, string> = {};
+      const loadedMappings: Record<string, string> = {};
       
-      variables.forEach((variable) => {
-        if (variable.type === 'array' && Array.isArray(variable.value) && variable.value.length > 0) {
-          // For array variables, map each field
-          const firstItem = variable.value[0];
-          const fields = Object.keys(firstItem);
-          fields.forEach((fieldName) => {
-            const fieldKey = `${variable.name}.${fieldName}`;
-            if (!fieldMappings[fieldKey]) {
-              defaultMappings[fieldKey] = `{{response.${variable.name}.${fieldName}}}`;
+      // Get the dynamic template JSON or fall back to static template JSON
+      const sourceJson = templateData.dynamicTemplateJson || templateData.staticTemplateJson;
+      
+      if (sourceJson) {
+        // Find the variables array location
+        let variablesArray: any[] | null = null;
+        if (sourceJson.card?.variables) {
+          variablesArray = sourceJson.card.variables;
+        } else if (sourceJson.variables) {
+          variablesArray = sourceJson.variables;
+        } else if (sourceJson.template?.variables) {
+          variablesArray = sourceJson.template.variables;
+        }
+
+        if (variablesArray) {
+          variables.forEach((variable, index) => {
+            const templateVariable = variablesArray[index];
+            if (!templateVariable) return;
+
+            if (variable.type === 'array' && Array.isArray(templateVariable.value) && templateVariable.value.length > 0) {
+              // For array variables, extract field mappings from template
+              const firstItem = templateVariable.value[0];
+              Object.keys(firstItem).forEach((fieldName) => {
+                const fieldKey = `${variable.name}.${fieldName}`;
+                const templateValue = firstItem[fieldName];
+                // Only set if the value looks like a mapping (contains {{...}})
+                if (typeof templateValue === 'string' && templateValue.includes('{{')) {
+                  loadedMappings[fieldKey] = templateValue;
+                } else {
+                  // Leave empty if no mapping exists
+                  loadedMappings[fieldKey] = '';
+                }
+              });
+            } else {
+              // For non-array variables
+              const templateValue = templateVariable.value;
+              // Only set if the value looks like a mapping (contains {{...}})
+              if (typeof templateValue === 'string' && templateValue.includes('{{')) {
+                loadedMappings[variable.name] = templateValue;
+              } else {
+                // Leave empty if no mapping exists
+                loadedMappings[variable.name] = '';
+              }
             }
           });
-        } else {
-          // For non-array variables
-          if (!fieldMappings[variable.name]) {
-            defaultMappings[variable.name] = `{{response.${variable.name}}}`;
-          }
         }
-      });
-
-      if (Object.keys(defaultMappings).length > 0) {
-        setFieldMappings(prev => ({ ...defaultMappings, ...prev }));
       }
+
+      setFieldMappings(loadedMappings);
     }
-  }, [mode, variables]);
+  }, [mode, variables, templateData]);
 
   const getJsonPaths = (jsonString: string): string[] => {
     try {
