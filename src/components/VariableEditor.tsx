@@ -104,6 +104,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
   }, [mode, dynamicSettingsLoaded, templateData]);
 
   // Load field mappings and arrayKeyName from dynamic template JSON (don't auto-generate)
+  // Only load on initial mount or when switching to dynamic mode
   useEffect(() => {
     if (mode === 'dynamic' && variables.length > 0) {
       const loadedMappings: Record<string, string> = {};
@@ -168,7 +169,7 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       setFieldMappings(loadedMappings);
       setVariableNames(loadedNames);
     }
-  }, [mode, variables, templateData]);
+  }, [mode, variables]); // Removed templateData from dependencies to prevent clearing after save
 
   const getJsonPaths = (jsonString: string): string[] => {
     try {
