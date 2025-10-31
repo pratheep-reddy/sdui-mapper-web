@@ -505,12 +505,17 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
       if (variablesArray) {
         // Update arrayKeyName and apply field mappings (don't modify variable.name)
         variables.forEach((variable, index) => {
-          const newName = variableNames[index] || variable.name;
+          const newName = variableNames[index];
           
           if (variablesArray[index]) {
-            // For array variables, set arrayKeyName instead of changing name
+            // For array variables, set arrayKeyName if a new name is provided
             if (variable.type === 'array') {
-              variablesArray[index].arrayKeyName = newName;
+              if (newName) {
+                variablesArray[index].arrayKeyName = newName;
+              } else {
+                // Remove arrayKeyName if cleared
+                delete variablesArray[index].arrayKeyName;
+              }
             }
             
             // For array variables, update field mappings in the template
@@ -518,9 +523,12 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
               const firstItem = variable.value[0];
               const fields = Object.keys(firstItem);
               
+              // Use newName if available, otherwise use variable.name
+              const varNameForMapping = newName || variable.name;
+              
               // Apply field mappings to the first item template
               fields.forEach((fieldName) => {
-                const fieldKey = `${newName}.${fieldName}`;
+                const fieldKey = `${varNameForMapping}.${fieldName}`;
                 const mapping = fieldMappings[fieldKey];
                 
                 if (mapping && variablesArray[index].value[0]) {
@@ -529,7 +537,8 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
               });
             } else {
               // For primitive/object variables, apply direct mapping
-              const fieldKey = newName;
+              const varNameForMapping = newName || variable.name;
+              const fieldKey = varNameForMapping;
               const mapping = fieldMappings[fieldKey];
               if (mapping) {
                 variablesArray[index].value = mapping;
@@ -1269,36 +1278,31 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
                               <label className="text-xs font-medium text-slate-600">Variable Name:</label>
                               <input
                                 type="text"
-                                value={variableNames[index] !== undefined ? variableNames[index] : variable.name}
+                                value={variableNames[index] || ''}
                                 onChange={(e) => {
                                   const newName = e.target.value;
+                                  const oldVarName = variableNames[index] || '';
                                   
-                                  // If cleared completely, remove from state to allow fallback
-                                  if (newName === '') {
-                                    setVariableNames(prev => {
-                                      const updated = { ...prev };
-                                      delete updated[index];
-                                      return updated;
-                                    });
-                                    return;
-                                  }
-                                  
-                                  // Update variable name in state
+                                  // Update variable name in state (even if empty)
                                   setVariableNames(prev => ({ ...prev, [index]: newName }));
                                   
-                                  // Update field mappings with new variable name
-                                  const oldFields = Object.keys(firstItem);
-                                  const updatedMappings = { ...fieldMappings };
-                                  const oldVarName = variableNames[index] !== undefined ? variableNames[index] : variable.name;
-                                  oldFields.forEach((fieldName) => {
-                                    const oldKey = `${oldVarName}.${fieldName}`;
-                                    const newKey = `${newName}.${fieldName}`;
-                                    if (updatedMappings[oldKey]) {
-                                      updatedMappings[newKey] = updatedMappings[oldKey];
-                                      delete updatedMappings[oldKey];
-                                    }
-                                  });
-                                  setFieldMappings(updatedMappings);
+                                  // Only update field mapping keys if both old and new names exist
+                                  // If clearing (newName is empty), leave field mappings unchanged
+                                  if (oldVarName && newName) {
+                                    const oldFields = Object.keys(firstItem);
+                                    const updatedMappings = { ...fieldMappings };
+                                    
+                                    oldFields.forEach((fieldName) => {
+                                      const oldKey = `${oldVarName}.${fieldName}`;
+                                      const newKey = `${newName}.${fieldName}`;
+                                      if (updatedMappings[oldKey]) {
+                                        updatedMappings[newKey] = updatedMappings[oldKey];
+                                        delete updatedMappings[oldKey];
+                                      }
+                                    });
+                                    
+                                    setFieldMappings(updatedMappings);
+                                  }
                                 }}
                                 placeholder="e.g., offers, items, data"
                                 className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm font-semibold text-slate-900 bg-slate-50"
@@ -1314,8 +1318,8 @@ export default function VariableEditor({ variables, templateData, onPreviewRefre
                               Field Mappings
                             </label>
                             {fields.map((fieldName, fieldIdx) => {
-                              const currentVarName = variableNames[index] || variable.name;
-                              const fieldKey = `${currentVarName}.${fieldName}`;
+                              const currentVarName = variableNames[index] || '';
+                              const fieldKey = currentVarName ? `${currentVarName}.${fieldName}` : fieldName;
                               return (
                                 <div key={fieldIdx} className="space-y-1 relative">
                                   <label className="text-xs font-medium text-slate-500">
